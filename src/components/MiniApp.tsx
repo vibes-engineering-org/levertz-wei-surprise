@@ -1,18 +1,19 @@
 "use client";
 
 import { useState } from "react";
+import type { Address } from "viem";
 import { useAccount, useConnect, useWalletClient, injected } from "wagmi";
 
 function SurpriseSomeone() {
   const { isConnected } = useAccount();
-  const { connect } = useConnect({ connector: injected() });
+  const { connect } = useConnect();
   const { data: walletClient } = useWalletClient();
   const [loading, setLoading] = useState(false);
 
   const handleSurprise = async () => {
     if (!walletClient) return;
     setLoading(true);
-    let recipient: string | null = null;
+    let recipient: Address | null = null;
     while (!recipient) {
       const fid = Math.floor(Math.random() * 100000) + 1;
       try {
@@ -30,7 +31,7 @@ function SurpriseSomeone() {
     }
     try {
       const hash = await walletClient.sendTransaction({
-        to: recipient!,
+        to: recipient! as Address,
         value: 10n ** 18n,
         chainId: 10143,
       });
@@ -45,7 +46,7 @@ function SurpriseSomeone() {
     return (
       <div className="flex items-center justify-center h-screen">
         <button
-          onClick={() => connect()}
+          onClick={() => connect({ connector: injected() })}
           className="px-4 py-2 bg-blue-500 text-white rounded"
         >
           Connect Wallet
