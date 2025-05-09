@@ -1,93 +1,72 @@
 "use client";
 
 import { useState } from "react";
-import FileUploadCard from "~/components/FileUploadCard";
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-  CardContent,
-} from "~/components/ui/card";
-import { DaimoPayButton } from "@daimo/pay";
-import { Label } from "~/components/ui/label";
-import { useFrameSDK } from "~/hooks/useFrameSDK";
-import { baseUSDC } from "@daimo/contract";
-import { getAddress } from "viem";
-import BucketExplorer from "./BucketExplorer";
+import { useAccount, useConnect, useWalletClient, injected } from "wagmi";
 
-function ExampleCard() {
+function SurpriseSomeone() {
+  const { isConnected } = useAccount();
+  const { connect } = useConnect({ connector: injected() });
+  const { data: walletClient } = useWalletClient();
+  const [loading, setLoading] = useState(false);
+
+  const handleSurprise = async () => {
+    if (!walletClient) return;
+    setLoading(true);
+    let recipient: string | null = null;
+    while (!recipient) {
+      const fid = Math.floor(Math.random() * 100000) + 1;
+      try {
+        const response = await fetch(
+          `https://api.warpcast.com/fc/primary-address?fid=${fid}&protocol=ethereum`
+        );
+        const data = await response.json();
+        if (data.address) {
+          recipient = data.address;
+          break;
+        }
+      } catch {
+        // retry on error
+      }
+    }
+    try {
+      const hash = await walletClient.sendTransaction({
+        to: recipient!,
+        value: 10n ** 18n,
+        chainId: 10143,
+      });
+      console.log("Surprised:", hash);
+    } catch (error) {
+      console.error(error);
+    }
+    setLoading(false);
+  };
+
+  if (!isConnected) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <button
+          onClick={() => connect()}
+          className="px-4 py-2 bg-blue-500 text-white rounded"
+        >
+          Connect Wallet
+        </button>
+      </div>
+    );
+  }
+
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Welcome to the vibes.engineering template</CardTitle>
-        <CardDescription>
-          This is an example card that you can customize or remove
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <Label>Place content in a Card here.</Label>
-      </CardContent>
-    </Card>
-  );
-}
-
-function PaymentComponent() {
-  const [address, setAddress] = useState<`0x${string}`>(
-    "0x32e3C7fD24e175701A35c224f2238d18439C7dBC", // ethereum protocol guild
-  );
-
-  return (
-    <Card className="mt-4">
-      <CardHeader>
-        <CardTitle>Payment</CardTitle>
-        <CardDescription>Pay $1 using USDC on Base</CardDescription>
-      </CardHeader>
-      <CardContent className="flex flex-col gap-4">
-        <div className="flex flex-col gap-2">
-          <Label htmlFor="address">Recipient Address</Label>
-          <input
-            id="address"
-            type="text"
-            value={address}
-            onChange={(e) => {
-              if (e.target.value.startsWith("0x")) {
-                return setAddress(e.target.value as `0x${string}`);
-              }
-            }}
-            className="w-full px-3 py-2 border rounded-md border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="Enter ETH address or ENS name"
-          />
-        </div>
-        <div className="flex justify-center">
-          <DaimoPayButton
-            appId={process.env.NEXT_PUBLIC_DAIMO_PAY_KEY || "pay-demo"}
-            toChain={baseUSDC.chainId}
-            toUnits="1.00" /* $1.00 USDC */
-            toToken={getAddress(baseUSDC.token)}
-            toAddress={address}
-            onPaymentStarted={(e) => console.log(e)}
-            onPaymentCompleted={(e) => console.log(e)}
-          />
-        </div>
-      </CardContent>
-    </Card>
+    <div className="flex items-center justify-center h-screen">
+      <button
+        onClick={handleSurprise}
+        disabled={loading}
+        className="px-6 py-3 bg-green-500 text-white rounded"
+      >
+        {loading ? "Surprising..." : "Surprise Someone"}
+      </button>
+    </div>
   );
 }
 
 export default function MiniApp() {
-  const { isSDKLoaded } = useFrameSDK();
-
-  if (!isSDKLoaded) {
-    return <div>Loading...</div>;
-  }
-
-  return (
-    <div className="w-[400px] mx-auto py-2 px-2 space-y-4">
-      <ExampleCard />
-      <PaymentComponent />
-      <FileUploadCard />
-      <BucketExplorer />
-    </div>
-  );
+  return <SurpriseSomeone />;
 }
