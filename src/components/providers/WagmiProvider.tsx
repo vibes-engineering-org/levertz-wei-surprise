@@ -1,5 +1,6 @@
-import { createConfig, injected, WagmiProvider } from "wagmi";
-import { base, Chain, degen, mainnet, optimism } from "wagmi/chains";
+import { createConfig, injected, WagmiConfig } from "wagmi";
+import { base, degen, mainnet, optimism } from "wagmi/chains";
+import type { Chain } from "wagmi/chains";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { farcasterFrame } from "@farcaster/frame-wagmi-connector";
 import { DaimoPayProvider, getDefaultConfig } from "@daimo/pay";
@@ -38,10 +39,10 @@ const queryClient = new QueryClient();
 
 export default function Provider({ children }: { children: React.ReactNode }) {
   return (
-    <WagmiProvider config={config}>
+    <WagmiConfig config={config}>
       <QueryClientProvider client={queryClient}>
         <DaimoPayProvider>{children}</DaimoPayProvider>
       </QueryClientProvider>
-    </WagmiProvider>
+    </WagmiConfig>
   );
 }
